@@ -1,0 +1,17 @@
+LET dolzina = REC dolzina sez -> 
+    MATCH sez WITH
+    | [] -> 0
+    | x :: xs -> 1 + (dolzina xs)
+IN
+LET funkcija = REC funkcija n -> FUN sez -> 
+    MATCH sez WITH
+    | [] -> []
+    | x :: xs -> (n * x) :: (funkcija n xs)
+IN
+LET p = (2 :: 8 :: 9 :: 3 :: 4 :: 5 :: 6 :: 7 :: 8 :: [])
+IN
+LET q = (3 :: 4 :: 6 :: [])
+IN
+LET par = {funkcija (dolzina p) p, funkcija (dolzina q) q} 
+IN
+SND {FST par, SND par}

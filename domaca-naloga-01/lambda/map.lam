@@ -1,0 +1,6 @@
+LET map = REC map f -> FUN sez ->
+    MATCH sez WITH 
+    | [] -> []
+    | x :: xs -> (f x) :: (map f xs)
+IN
+map (FUN x -> LET diff = 42 - x IN IF (diff > 0) THEN diff ELSE (0 - diff)) (7 :: 3 :: 42 :: 96 :: [])

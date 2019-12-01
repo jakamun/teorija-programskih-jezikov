@@ -1,0 +1,16 @@
+LET potenca = REC potenca n -> FUN x -> IF n = 0 THEN 1 ELSE x * (potenca (n-1) x)
+IN 
+LET polinom = REC polinom x -> FUN p -> 
+    MATCH p WITH
+    | [] -> 0
+    | y :: ys -> ((FST y) * (potenca (SND y) x)) + (polinom x ys)
+IN
+LET p = ({4, 0} :: {7, 1} :: {5, 2} :: [])
+IN
+LET q = ({2, 0} :: {8, 1} :: {9, 2} :: {3, 3} :: {4, 4} :: {5, 5} :: {6, 6} :: {7, 7} :: {8, 8} :: [])
+IN 
+LET par = {polinom 42 q, polinom 2 q}
+IN 
+LET p42 = polinom 42 p
+IN
+FST {p42, SND par}
