@@ -35,9 +35,9 @@ let rec eval_exp = function
       | _ -> failwith "Boolean expected"
       end
   | S.Apply (e1, e2) ->
-      let f = eval_exp e1
+      let y = eval_exp e1
       in
-      begin match f with
+      begin match y with
       | S.Lambda (x, e) -> eval_exp (S.subst [(x, e2)] e)
       | S.RecLambda (f, x, e) as rec_f -> eval_exp (S.subst [(f, rec_f); (x, e2)] e)
       | _ -> failwith "Function expected"
@@ -86,19 +86,21 @@ let rec step = function
   | S.Greater (e1, e2) -> S.Greater (step e1, e2)
   | S.IfThenElse (S.Bool b, e1, e2) -> if b then e1 else e2
   | S.IfThenElse (e, e1, e2) -> S.IfThenElse (step e, e1, e2)
-  | S.Apply (S.Lambda (x, e), v) when is_value v -> S.subst [(x, v)] e
-  | S.Apply (S.RecLambda (f, x, e) as rec_f, v) when is_value v -> S.subst [(f, rec_f); (x, v)] e
-  | S.Apply ((S.Lambda _ | S.RecLambda _) as f, e) -> S.Apply (f, step e)
+  | S.Apply (S.Lambda (x, e), v) -> S.subst [(x, v)] e
+  | S.Apply (S.RecLambda (f, x, e) as rec_f, v) -> S.subst [(f, rec_f); (x, v)] e
   | S.Apply (e1, e2) -> S.Apply (step e1, e2)
   | S.Fst (S.Pair (v, _)) -> v  
   | S.Fst v when is_value v -> failwith "Pair expected"
   | S.Fst e -> S.Fst (step e)
   | S.Snd (S.Pair (_, v)) -> v  
   | S.Snd v when is_value v -> failwith "Pair expected"
-  | S.Snd e -> S.Fst (step e)
-  | S.Match (S.Nil, e1, x, xs, e2) -> e1
-  | S.Match (S.Cons (y, ys), e1, x, xs, e2) -> S.subst [(x, y); (xs, ys)] e2
-  | S.Match (e, e1, x, xs, e2) when is_value e -> failwith "List expected"
+  | S.Snd e -> S.Snd (step e)
+  | S.Match (e, e1, x, xs, e2) when is_value e -> 
+    begin match e with
+    | S.Nil -> e1
+    | S.Cons (v, vs) -> S.subst [(x, v); (xs, vs)] e2
+    | _ -> failwith "List expected"
+    end
   | S.Match (e, e1, x, xs, e2) -> S.Match (step e, e1, x, xs, e2)
 
 let big_step e =
