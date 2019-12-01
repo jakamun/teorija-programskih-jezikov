@@ -1,9 +1,7 @@
-LET slaba =
-    REC slaba' sez ->
-        FUN x ->
-            IF x < 1 THEN 
-                sez 
-            ELSE 
-                slaba' (x :: (x * x) :: sez) (x - 1)
+LET potenca = REC potenca n -> FUN x ->  IF n = 0 THEN 1 ELSE x * (potenca (n - 1) x)
 IN
-slaba [] (IF 3 < 4 THEN ((2 * 4) - ((8 * 8) - 61)) ELSE 7)
+LET par = {potenca 12 10, potenca 14 9}
+IN
+LET x = (FST par) + (SND par) 
+IN
+potenca 10 (IF x > 100 THEN (x-100) ELSE x)
