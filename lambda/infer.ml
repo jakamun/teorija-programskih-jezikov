@@ -15,16 +15,16 @@ let rec infer_exp ctx = function
   | S.Plus (e1, e2) | S.Minus (e1, e2) | S.Times (e1, e2) ->
       let t1, eqs1 = infer_exp ctx e1
       and t2, eqs2 = infer_exp ctx e2 in
-      S.IntTy, [(t1, S.IntTy); (t2, S.IntTy)] @ eqs1 @ eqs2
+      S.IntTy, (t1, S.IntTy) :: (t2, S.IntTy) :: eqs1 @ eqs2
   | S.Equal (e1, e2) | S.Less (e1, e2) | S.Greater (e1, e2) ->
       let t1, eqs1 = infer_exp ctx e1
       and t2, eqs2 = infer_exp ctx e2 in
-      S.BoolTy, [(t1, S.IntTy); (t2, S.IntTy)] @ eqs1 @ eqs2
+      S.BoolTy, (t1, S.IntTy) :: (t2, S.IntTy) :: eqs1 @ eqs2
   | S.IfThenElse (e, e1, e2) ->
       let t, eqs = infer_exp ctx e
       and t1, eqs1 = infer_exp ctx e1
       and t2, eqs2 = infer_exp ctx e2 in
-      t1, [(t, S.BoolTy); (t1, t2)] @ eqs @ eqs1 @ eqs2
+      t1, (t, S.BoolTy) :: (t1, t2) :: eqs @ eqs1 @ eqs2
   | S.Lambda (x, e) ->
       let a = fresh_ty () in
       let ctx' = (x, a) :: ctx in
@@ -41,36 +41,31 @@ let rec infer_exp ctx = function
       and t2, eqs2 = infer_exp ctx e2
       and a = fresh_ty ()
       in
-      a, [(t1, S.ArrowTy (t2, a))] @ eqs1 @ eqs2
+      a, (t1, S.ArrowTy (t2, a)) :: eqs1 @ eqs2
 
 let subst_equations sbst =
   let subst_equation (t1, t2) = (S.subst_ty sbst t1, S.subst_ty sbst t2) in
   List.map subst_equation
 
-let add_subst a t sbst =
-  let subst_subst (a', t') = (a', S.subst_ty [(a, t)] t') in
-  (a, t) :: List.map subst_subst sbst
+let add_subst a t sbst = (a, S.subst_ty sbst t) :: sbst
 
 let rec occurs a = function
   | S.ParamTy a' -> a = a'
   | S.IntTy | S.BoolTy -> false
   | S.ArrowTy (t1, t2) -> occurs a t1 || occurs a t2
 
-let rec solve sbst = function
-  | [] ->
-      sbst
+let rec unify = function
+  | [] -> []
   | (t1, t2) :: eqs when t1 = t2 ->
-      solve sbst eqs
+      unify eqs
   | (S.ArrowTy (t1, t1'), S.ArrowTy (t2, t2')) :: eqs ->
-      solve sbst ((t1, t2) :: (t1', t2') :: eqs)
+      unify ((t1, t2) :: (t1', t2') :: eqs)
   | (S.ParamTy a, t) :: eqs when not (occurs a t) ->
-      let sbst' = add_subst a t sbst in
-      solve sbst' (subst_equations sbst' eqs)
+      add_subst a t (unify (subst_equations [(a, t)] eqs))
   | (t, S.ParamTy a) :: eqs when not (occurs a t) ->
-      let sbst' = add_subst a t sbst in
-      solve sbst' (subst_equations sbst' eqs)
+      add_subst a t (unify (subst_equations [(a, t)] eqs))
   | (t1, t2) :: _ ->
-      failwith ("Cannot solve " ^ S.string_of_ty t1 ^ " = " ^ S.string_of_ty t2)
+      failwith ("Cannot unify " ^ S.string_of_ty t1 ^ " = " ^ S.string_of_ty t2)
 
 let rec renaming sbst = function
   | S.ParamTy a ->
@@ -80,11 +75,12 @@ let rec renaming sbst = function
   | S.IntTy | S.BoolTy -> sbst
   | S.ArrowTy (t1, t2) ->
       let sbst' = renaming sbst t1 in
-      renaming sbst' t2
+      let sbst'' = renaming sbst' t2 in
+      sbst''
 
 let infer e =
   let t, eqs = infer_exp [] e in
-  let sbst = solve [] eqs in
+  let sbst = unify eqs in
   let t' = S.subst_ty sbst t in
   let sbst' = renaming [] t' in
   let t'' = S.subst_ty sbst' t' in

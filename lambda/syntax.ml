@@ -90,14 +90,14 @@ let rec subst_ty sbst = function
       | None -> t
       | Some t' -> t'
       end
-    | IntTy | BoolTy as t -> t
-    | ArrowTy (t1, t2) -> ArrowTy (subst_ty sbst t1, subst_ty sbst t2)
+  | IntTy | BoolTy as t -> t
+  | ArrowTy (t1, t2) -> ArrowTy (subst_ty sbst t1, subst_ty sbst t2)
 
-let string_of_param (Param a) =
+let string_of_param (Param alpha) =
   let max_alpha = int_of_char 'z' - int_of_char 'a' + 1 in
-  if a < max_alpha
-  then "'" ^ String.make 1 (char_of_int (int_of_char 'a' + a))
-  else "'ty" ^ string_of_int (a - max_alpha)
+  if alpha < max_alpha
+  then "'" ^ String.make 1 (char_of_int (int_of_char 'a' + alpha))
+  else "'ty" ^ string_of_int (alpha - max_alpha)
 
 let rec string_of_ty1 = function
   | ArrowTy (t1, t2) ->
