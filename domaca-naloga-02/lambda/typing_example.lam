@@ -1,0 +1,1 @@
+FUN function -> FUN pair -> function (FST pair) (SND pair)
